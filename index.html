@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Monitoring BBM - Naim Asman</title>
+    <!-- Library untuk PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    
+    <style>
+        :root {
+            --primary: #1a2a3a;
+            --secondary: #34495e;
+            --success: #27ae60;
+            --info: #2980b9;
+            --warning: #f39c12;
+            --danger: #e74c3c;
+            --light: #f8f9fa;
+            --accent: #d4af37;
+        }
+
+        body { font-family: 'Inter', sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 1300px; margin: auto; background: white; padding: 35px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.08); }
+        
+        .header-section { text-align: center; margin-bottom: 40px; border-bottom: 2px solid #eee; padding-bottom: 20px; }
+        h2 { color: var(--primary); margin: 0; font-size: 1.8rem; }
+        .subtitle { color: #7f8c8d; font-size: 0.95rem; margin-top: 5px; }
+
+        /* Dashboard */
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 35px; }
+        .stat-card { padding: 20px; border-radius: 15px; text-align: center; color: white; }
+        .card-solar { background: linear-gradient(135deg, #2c3e50, #34495e); }
+        .card-dexlite { background: linear-gradient(135deg, #8e44ad, #9b59b6); }
+        .card-pertalite { background: linear-gradient(135deg, #27ae60, #2ecc71); }
+        .card-pertamax { background: linear-gradient(135deg, #2980b9, #3498db); }
+        .stat-card p { margin: 10px 0 0 0; font-size: 1.8em; font-weight: 800; }
+
+        /* Forms */
+        .form-grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: 30px; margin-bottom: 40px; }
+        .form-group { border: 1px solid #edf2f7; padding: 25px; border-radius: 16px; background: #fff; }
+        .hm-input-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.85em; color: #4a5568; }
+        input, select { width: 100%; padding: 10px; margin-bottom: 15px; border: 1.5px solid #e2e8f0; border-radius: 8px; box-sizing: border-box; }
+        
+        button { cursor: pointer; border: none; border-radius: 8px; font-weight: 700; transition: 0.2s; }
+        .btn-submit { width: 100%; padding: 14px; color: white; }
+        .btn-in { background-color: var(--success); }
+        .btn-out { background-color: var(--warning); }
+        
+        /* Table */
+        .table-header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; }
+        .btn-pdf { background-color: #e74c3c; color: white; padding: 8px 15px; margin-right: 5px; }
+        .btn-print { background-color: #34495e; color: white; padding: 8px 15px; }
+        .table-container { overflow-x: auto; border: 1px solid #eee; border-radius: 12px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9em; min-width: 1000px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #f1f5f9; }
+        th { background: #f8fafc; color: #64748b; font-size: 0.75em; text-transform: uppercase; }
+        .badge { padding: 3px 7px; border-radius: 4px; font-size: 0.7em; color: white; }
+
+        @media print {
+            .form-grid, .btn-pdf, .btn-print, .btn-reset { display: none !important; }
+            .container { box-shadow: none; padding: 0; }
+            table { min-width: 100%; font-size: 10pt; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-section">
+    <img src="logo mku.png" width="213" height="48"  alt=""/>
+<h2>Monitoring BBM </h2>
+        <div class="subtitle">Logistik & Manajemen Bahan Bakar | Site Office</div>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="stat-card card-solar"><h4>Solar</h4><p id="stok-Solar">0</p></div>
+        <div class="stat-card card-dexlite"><h4>Dexlite</h4><p id="stok-Dexlite">0</p></div>
+        <div class="stat-card card-pertalite"><h4>Pertalite</h4><p id="stok-Pertalite">0</p></div>
+        <div class="stat-card card-pertamax"><h4>Pertamax</h4><p id="stok-Pertamax">0</p></div>
+    </div>
+
+    <div class="form-grid">
+        <!-- Masuk -->
+        <div class="form-group">
+            <h4 style="color:var(--success)">Penerimaan (IN)</h4>
+            <label>Produk</label>
+            <select id="inType">
+                <option value="Solar">Solar</option>
+                <option value="Dexlite">Dexlite</option>
+                <option value="Pertalite">Pertalite</option>
+                <option value="Pertamax">Pertamax</option>
+            </select>
+            <label>Volume (Ltr)</label>
+            <input type="number" id="inQty" placeholder="0.00">
+            <label>Pemasok / Vendor</label>
+            <input type="text" id="inVendor" placeholder="Nama Vendor">
+            <button class="btn-submit btn-in" onclick="prosesTransaksi('MASUK')">SIMPAN MASUK</button>
+        </div>
+
+        <!-- Keluar -->
+        <div class="form-group">
+            <h4 style="color:var(--warning)">Pengeluaran (OUT)</h4>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                <div>
+                    <label>Produk</label>
+                    <select id="outType">
+                        <option value="Solar">Solar</option>
+                        <option value="Dexlite">Dexlite</option>
+                        <option value="Pertalite">Pertalite</option>
+                        <option value="Pertamax">Pertamax</option>
+                    </select>
+                </div>
+                <div>
+                    <label>ID Unit / Alat</label>
+                    <input type="text" id="outUnit" placeholder="Contoh: EX-01">
+                </div>
+            </div>
+            <label>Volume Pengisian (Ltr)</label>
+            <input type="number" id="outQty" placeholder="0.00">
+            
+            <div class="hm-input-group">
+                <div>
+                    <label>HM/KM Awal</label>
+                    <input type="number" id="outHMAwal" placeholder="Mulai">
+                </div>
+                <div>
+                    <label>HM/KM Akhir</label>
+                    <input type="number" id="outHMAkhir" placeholder="Selesai">
+                </div>
+            </div>
+            <button class="btn-submit btn-out" onclick="prosesTransaksi('KELUAR')">SIMPAN KELUAR</button>
+        </div>
+    </div>
+
+    <div class="table-section">
+        <div class="table-header-flex">
+            <h3>Riwayat Transaksi Terakhir</h3>
+            <div>
+                <button class="btn-pdf" onclick="unduhPDF()">Unduh PDF</button>
+                <button class="btn-print" onclick="window.print()">Cetak</button>
+            </div>
+        </div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Waktu</th>
+                        <th>Tipe</th>
+                        <th>Produk</th>
+                        <th>Qty (L)</th>
+                        <th>Saldo</th>
+                        <th>Unit/Vendor</th>
+                        <th>HM Awal</th>
+                        <th>HM Akhir</th>
+                        <th>Selisih</th>
+                    </tr>
+                </thead>
+                <tbody id="logTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 40px; color: #999; font-size: 0.8em;">
+        Dikembangkan oleh <b>Naim Asman</b> | Versi 2.4 (HM Tracking) <br>
+        <button class="btn-reset" onclick="resetData()" style="background:none; border:none; text-decoration:underline; color:#ccc; margin-top:10px;">Hapus Data</button>
+    </div>
+</div>
+
+<script>
+    let bbmData = JSON.parse(localStorage.getItem('bbm_v24_db')) || {
+        stok: { Solar: 0, Dexlite: 0, Pertalite: 0, Pertamax: 0 },
+        logs: []
+    };
+
+    function updateUI() {
+        for (let j in bbmData.stok) {
+            document.getElementById(`stok-${j}`).innerText = bbmData.stok[j].toLocaleString('id-ID') + ' L';
+        }
+
+        const tbody = document.getElementById('logTableBody');
+        tbody.innerHTML = '';
+        
+        [...bbmData.logs].reverse().forEach(log => {
+            const diff = (log.hmAkhir && log.hmAwal) ? (log.hmAkhir - log.hmAwal).toFixed(1) : '-';
+            tbody.innerHTML += `
+                <tr>
+                    <td>${log.waktu}</td>
+                    <td><span class="badge" style="background:${log.tipe==='MASUK'?'#27ae60':'#f39c12'}">${log.tipe}</span></td>
+                    <td style="font-weight:bold">${log.produk}</td>
+                    <td style="color:${log.tipe==='MASUK'?'green':'red'}">${log.qty}</td>
+                    <td>${log.saldo} L</td>
+                    <td>${log.ref}</td>
+                    <td>${log.hmAwal || '-'}</td>
+                    <td>${log.hmAkhir || '-'}</td>
+                    <td style="font-weight:bold">${diff}</td>
+                </tr>
+            `;
+        });
+        localStorage.setItem('bbm_v24_db', JSON.stringify(bbmData));
+    }
+
+    function prosesTransaksi(tipe) {
+        const pre = tipe === 'MASUK' ? 'in' : 'out';
+        const produk = document.getElementById(pre + 'Type').value;
+        const qty = parseFloat(document.getElementById(pre + 'Qty').value);
+        const ref = document.getElementById(tipe === 'MASUK' ? 'inVendor' : 'outUnit').value;
+
+        if (!qty || qty <= 0 || !ref) return alert("Mohon lengkapi data!");
+
+        let hmAwal = null, hmAkhir = null;
+        if (tipe === 'KELUAR') {
+            hmAwal = parseFloat(document.getElementById('outHMAwal').value) || 0;
+            hmAkhir = parseFloat(document.getElementById('outHMAkhir').value) || 0;
+            if (qty > bbmData.stok[produk]) return alert("Stok tidak cukup!");
+            if (hmAkhir > 0 && hmAkhir < hmAwal) return alert("HM Akhir tidak boleh lebih kecil dari HM Awal!");
+        }
+
+        bbmData.stok[produk] += (tipe === 'MASUK' ? qty : -qty);
+        
+        bbmData.logs.push({
+            waktu: new Date().toLocaleString('id-ID'),
+            tipe, produk, qty,
+            saldo: bbmData.stok[produk],
+            ref: ref.toUpperCase(),
+            hmAwal, hmAkhir
+        });
+
+        // Clear Inputs
+        document.getElementById(pre + 'Qty').value = '';
+        if(tipe==='MASUK') document.getElementById('inVendor').value = '';
+        else {
+            document.getElementById('outUnit').value = '';
+            document.getElementById('outHMAwal').value = '';
+            document.getElementById('outHMAkhir').value = '';
+        }
+
+        updateUI();
+    }
+
+    function unduhPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('l', 'pt');
+        doc.text("LAPORAN LOGISTIK BBM MKU", 40, 40);
+        doc.setFontSize(10);
+        doc.text(`User: Naim Asman | Tanggal: ${new Date().toLocaleString('id-ID')}`, 40, 55);
+
+        const data = bbmData.logs.map(l => [
+            l.waktu, l.tipe, l.produk, l.qty, l.saldo, l.ref, 
+            l.hmAwal || '-', l.hmAkhir || '-', 
+            (l.hmAkhir && l.hmAwal ? (l.hmAkhir - l.hmAwal).toFixed(1) : '-')
+        ]);
+
+        doc.autoTable({
+            startY: 70,
+            head: [['Waktu', 'Tipe', 'Produk', 'Qty', 'Saldo', 'Unit/Vendor', 'HM Awal', 'HM Akhir', 'Selisih']],
+            body: data,
+            headStyles: { fillStyle: [26, 42, 58] }
+        });
+
+        doc.save("Laporan_BBM_MKU.pdf");
+    }
+
+    function resetData() {
+        if(confirm("Hapus seluruh history?")) {
+            bbmData = { stok: { Solar:0, Dexlite:0, Pertalite:0, Pertamax:0 }, logs: [] };
+            updateUI();
+        }
+    }
+
+    updateUI();
+</script>
+
+</body>
+</html>
